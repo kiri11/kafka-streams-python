@@ -1,4 +1,5 @@
 from abc import ABCMeta, abstractmethod
+import msgpack
 from kafka_streams.state import LocalStateStore, StateStore
 from kafka import KafkaConsumer, KafkaProducer, SimpleClient
 
@@ -15,17 +16,23 @@ class Processor(metaclass=ABCMeta):
         ...
 
 
-class Source:
-    def __init__(self, context, name):
-        self.offset_store = context.put(name, LocalStateStore)
+class KafkaSource:
+    def __init__(self, *input_topics, key_deserializer=None, value_deserializer=None):
+        """Source is a processor with no input."""
+        self.key_deserializer = key_deserializer
+        self.value_deserializer = value_deserializer
+        self.consumer = KafkaConsumer(*input_topics,
+                                      bootstrap_servers=['kafka:9092'],
+                                      auto_offset_reset='earliest',
+                                      group_id=None,
+                                      enable_auto_commit=False,
+                                      consumer_timeout_ms=1000,
+                                      value_deserializer=msgpack.loads
+                                      )
 
-    def process_gen(self):
-        """Must save its offset to state store"""
-        pass
-
-
-class KafkaSource(Source):
-    pass
+    def gen(self):
+        for msg in self.consumer:
+            yield msg.value
 
 
 class KafkaSink(Processor):

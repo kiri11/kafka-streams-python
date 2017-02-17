@@ -1,17 +1,19 @@
 from kafka_streams.state import Context
-from kafka_streams.processor import Source, KafkaSink
+from kafka_streams.processor import KafkaSource, KafkaSink
 
 
-class KafkaStream:
-    def __init__(self, config, source: Source):
+class KStreamBuilder:
+    def __init__(self, config):
         self.config = config
         self.context = Context()
-        self.source_gen = source.process_gen
-        self.pipe = []
+        self.gen = None
+
+    def stream(self, *input_topics):
+        self.gen = KafkaSource(*input_topics).gen()
 
     def flat_map(self, flat_mapper_gen):
         """Accepts generator and applies it to key:value pairs."""
-        self.source_gen = flat_mapper_gen(self.source_gen)
+        self.gen = flat_mapper_gen(self.gen)
         return self
 
     def process(self, processor, *args):
@@ -27,7 +29,7 @@ class KafkaStream:
         return self.flat_map(lambda gen: (func(key, value) for key, value in gen))
 
     def map_values(self, func):
-        return self.flat_map(lambda gen: (key, func(value) for key, value in gen))
+        return self.flat_map(lambda gen: ((key, func(value)) for key, value in gen))
 
     def select_key(self):
         ...
@@ -43,11 +45,25 @@ class KafkaStream:
     def to(self, sink_topic):
         self.process(KafkaSink, sink_topic)
 
+    def to_stream(self):
+        return KStream
 
-class KTable(KafkaStream):
+    def print(self):
+        self.flat_map(lambda gen: (print("%s: %s" % (key, value)) for key, value in gen))
+        return self
+
+    def run(self):
+        for x in self.gen:
+            yield x
+
+class KTable:
     pass
 
 
-class KStream(KafkaStream):
-    pass
+class KStream:
+    def __init__(self, builder):
+        self.gen = builder.source_gen
+        self.context = builder.context
 
+    def start(self):
+        self.gen()

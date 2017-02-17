@@ -31,6 +31,14 @@ class Context:
     def put(self, state_store: StateStore):
         self.stores[state_store.name] = state_store
 
+    def load(self):
+        for store in self.stores:
+            store.load()
+
+    def save(self):
+        for store in self.stores:
+            store.save()
+
 
 class LocalStateStore(StateStore):
     """StateStore implementation using

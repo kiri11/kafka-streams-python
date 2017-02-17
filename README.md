@@ -9,6 +9,8 @@ to support other languages by Confluence. This is an opportunity for the communi
 This is NOT an exact implementation of Java KafkaStreams API, but more of a library based on KafkaStreams DSL 
 to make stream processing more pythonic.
 
+[Concepts](http://docs.confluent.io/3.0.0/streams/concepts.html) are  mostly the same as in Java KafkaStreams library.
+
 ### Initial goals:
  - Provide a convenient interface for creating stream processing topologies.
  - Allow explicit state management.
